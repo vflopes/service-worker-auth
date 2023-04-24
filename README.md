@@ -46,7 +46,7 @@ yarn start
 
 4. Acesse a aplicação no navegador em http://localhost:3000. O usuário de teste é `john.doe` e a senha de teste é `123654`. Como é uma prova de conceito, várias informações são disponibilizadas no console do browser, então recomendamos que a navegação seja feita com o console aberto.
 
-5. Lembrando que como o Shared Worker funciona em uma thread separada da página, para remover o estado autenticado você deverá atualizar a página limpando o cache do browser (CTRL+F5). Ao abrir uma nova aba, você não precisa se autenticar novamente, o Shared Worker fornecerá para a nova página o token atual.
+5. Lembrando que como o Shared Worker funciona em uma thread separada da página, para remover o estado autenticado você acessar o link chrome://inspect/#workers (no caso do navegador Chrome) e terminar o Shared Worker. Ao abrir uma nova aba, você não precisa se autenticar novamente, o Shared Worker fornecerá para a nova página o token atual. O Shared Worker também persiste mesmo com o CTRL+F5.
 
 ## Como funciona
 
