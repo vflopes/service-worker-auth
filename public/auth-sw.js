@@ -1,29 +1,31 @@
-self.addEventListener('fetch', (event) => {
-    const url = new URL(event.request.url);
+let token = null;
 
-    // Verifique se a solicitação é para a API que requer autenticação
-    if (url.pathname.startsWith('/api/')) {
+const renewInterval = 3000
 
-        console.log(`Requisição deve ser autenticada: ${url.pathname}`);
+self.onconnect = (event) => {
 
-        // Clone a solicitação original para que possamos modificá-la
-        const modifiedRequest = new Request(event.request, {
-            headers: new Headers(event.request.headers),
-        });
+    const port = event.ports[0];
 
-        // Adicione o header de autorização com o token JWT
-        modifiedRequest.headers.set('Authorization', `Bearer ${self.token}`);
+    port.onmessage = (messageEvent) => {
+        switch (messageEvent.data.action) {
+            case 'set':
+                token = messageEvent.data.token;
+                break;
+            case 'get':
+                port.postMessage(token);
+                break;
+            default:
+                console.error('Ação desconhecida');
+        }
+    };
 
-        // Enviar a solicitação modificada com o header de autorização
-        event.respondWith(fetch(modifiedRequest));
-    } else {
-        // Se não for uma solicitação de API, deixe-a passar sem modificação
-        event.respondWith(fetch(event.request));
-    }
-});
+    setInterval(function () {
 
-self.addEventListener('message', (event) => {
-    if (event.data && event.data.type === 'SET_TOKEN') {
-        self.token = event.data.token;
-    }
-});
+        // Lógica de renovação de token deve ser inserida aqui
+
+        port.postMessage(token);
+
+    }, renewInterval);
+
+
+};

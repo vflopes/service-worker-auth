@@ -1,3 +1,17 @@
+const sharedWorker = new SharedWorker('auth-sw.js');
+
+let currentToken = null;
+
+sharedWorker.port.onmessage = (event) => {
+
+    console.log('Token obtido do Shared Worker:', event.data);
+
+    currentToken = event.data;
+
+};
+
+sharedWorker.port.postMessage({ action: 'get' });
+
 document.getElementById('login-form').addEventListener('submit', async (event) => {
     event.preventDefault();
 
@@ -15,8 +29,10 @@ document.getElementById('login-form').addEventListener('submit', async (event) =
         const { token } = await response.json();
         console.log('JWT token:', token);
 
+        currentToken = token
+
         // Instancie o service worker e envie o token
-        await registerServiceWorker(token);
+        sharedWorker.port.postMessage({ action: 'set', token });
 
     } else {
         console.error('Erro na autenticação:', await response.json());
@@ -30,28 +46,19 @@ document.getElementById('protected-request').addEventListener('click', async (ev
     await fetchProtectedData();
 });
 
-// Adicione esta função no final do arquivo, após o evento de envio do formulário
-async function registerServiceWorker(token) {
-    if ('serviceWorker' in navigator) {
-        try {
-            const registration = await navigator.serviceWorker.register('auth-sw.js');
-            await navigator.serviceWorker.ready;
-
-            // Enviar o token JWT para o service worker
-            registration.active.postMessage({ type: 'SET_TOKEN', token });
-
-            console.log('Service Worker registrado e token enviado');
-        } catch (error) {
-            console.error('Falha ao registrar o Service Worker:', error);
-        }
-    } else {
-        console.warn('Service Workers não são suportados neste navegador');
+function getAuthHeaders() {
+    return {
+        'Authorization': `Bearer ${currentToken}`
     }
 }
 
 async function fetchProtectedData() {
     try {
-        const response = await fetch('/api/protected');
+        const response = await fetch('/api/protected', {
+            headers: {
+                ...getAuthHeaders(),
+            }
+        });
         const data = await response.json();
 
         if (response.status === 200) {
