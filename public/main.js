@@ -54,6 +54,12 @@ document.getElementById('protected-request').addEventListener('click', async (ev
     await fetchProtectedData();
 });
 
+document.getElementById('logout').addEventListener('click', async (event) => {
+    sharedWorker.port.postMessage({ action: 'set', token: null });
+    currentToken = null;
+    console.log('Token removido da memória');
+});
+
 function getAuthHeaders() {
     return {
         'Authorization': `Bearer ${currentToken}`
