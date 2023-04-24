@@ -1,6 +1,6 @@
-let token = null;
+let currentToken = null;
 
-const renewInterval = 3000
+const renewInterval = 5000
 
 self.onconnect = (event) => {
 
@@ -9,21 +9,52 @@ self.onconnect = (event) => {
     port.onmessage = (messageEvent) => {
         switch (messageEvent.data.action) {
             case 'set':
-                token = messageEvent.data.token;
+                currentToken = messageEvent.data.token;
                 break;
             case 'get':
-                port.postMessage(token);
+                port.postMessage({ action: 'set', token: currentToken });
                 break;
             default:
                 console.error('Ação desconhecida');
         }
     };
 
-    setInterval(function () {
+    setInterval(async () => {
 
-        // Lógica de renovação de token deve ser inserida aqui
+        if (!currentToken) {
+            return;
+        }
 
-        port.postMessage(token);
+        let response;
+
+        try {
+            // Lógica de renovação de token deve ser inserida aqui
+            response = await fetch('/renew', {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${currentToken}` },
+            });
+
+            if (response.ok) {
+
+                const { token } = await response.json();
+
+                currentToken = token
+
+                port.postMessage({ action: 'set', token });
+
+                return;
+
+            }
+
+            port.postMessage({ action: 'error', data: await response.json() });
+
+        } catch (error) {
+            port.postMessage({ action: 'error', data: error });
+        }
+
+
+
+
 
     }, renewInterval);
 

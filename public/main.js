@@ -4,9 +4,18 @@ let currentToken = null;
 
 sharedWorker.port.onmessage = (event) => {
 
-    console.log('Token obtido do Shared Worker:', event.data);
-
-    currentToken = event.data;
+    switch (event.data.action) {
+        case 'error':
+            console.error('O service worker retornou um erro', event.data)
+            break;
+        case 'set':
+            console.log('Token obtido do Shared Worker:', event.data);
+            currentToken = event.data.token;
+            break;
+        default:
+            console.error('Ação desconhecida', event.data);
+            break;
+    }
 
 };
 
@@ -31,7 +40,6 @@ document.getElementById('login-form').addEventListener('submit', async (event) =
 
         currentToken = token
 
-        // Instancie o service worker e envie o token
         sharedWorker.port.postMessage({ action: 'set', token });
 
     } else {
