@@ -31,8 +31,8 @@ app.post('/authenticate', (req, res) => {
     }
 });
 
-// Middleware para validação do token
-const validateToken = (req, res, next) => {
+// Rota protegida (exemplo)
+app.get('/api/protected', (req, res) => {
     const authHeader = req.headers.authorization;
 
     if (!authHeader) {
@@ -42,29 +42,11 @@ const validateToken = (req, res, next) => {
     const token = authHeader.split(' ')[1];
 
     try {
-        req.session = jwt.verify(token, SECRET_KEY);
-        next();
+        jwt.verify(token, SECRET_KEY);
+        res.json({ message: 'Access granted' });
     } catch (error) {
         res.status(401).json({ error: 'Invalid or expired token' });
     }
-}
-
-// Rota protegida (exemplo)
-app.get('/api/protected', validateToken, (req, res) => {
-    res.json({ message: 'Access granted' });
-});
-
-// Renovação de token
-// Idealmente não deve ser feito com o access token, mas sim com o refresh token
-// Nesse exemplo, trabalhamos apenas com 1 token
-app.get('/renew', validateToken, (req, res) => {
-
-    console.log('Requisição de renovação recebida')
-
-    const token = jwt.sign({ username: req.session.username }, SECRET_KEY, { expiresIn: '1h' });
-
-    // Retorna o token JWT
-    res.json({ token });
 });
 
 const PORT = process.env.PORT || 3000;
