@@ -1,62 +1,54 @@
-let currentToken = null;
+self.currentToken = null;
 
-const renewInterval = 5000
+const renewInterval = 5000;
 
 self.onconnect = (event) => {
+  const port = event.ports[0];
 
-    const port = event.ports[0];
+  port.onmessage = (messageEvent) => {
+    switch (messageEvent.data.action) {
+      case "set":
+        self.currentToken = messageEvent.data.token;
+        break;
+      case "get":
+        port.postMessage({ action: "set", token: self.currentToken });
+        break;
+      default:
+        console.error("Ação desconhecida");
+    }
+  };
 
-    port.onmessage = (messageEvent) => {
-        switch (messageEvent.data.action) {
-            case 'set':
-                currentToken = messageEvent.data.token;
-                break;
-            case 'get':
-                port.postMessage({ action: 'set', token: currentToken });
-                break;
-            default:
-                console.error('Ação desconhecida');
-        }
-    };
+  setInterval(async () => {
+    port.postMessage({ action: "set", token: self.currentToken });
+  }, 3000);
 
-    setInterval(async () => {
+  setInterval(async () => {
+    if (!self.currentToken) {
+      return;
+    }
 
-        if (!currentToken) {
-            return;
-        }
+    let response;
 
-        let response;
+    try {
+      // Lógica de renovação de token deve ser inserida aqui
+      response = await fetch("/renew", {
+        method: "GET",
+        headers: { Authorization: `Bearer ${self.currentToken}` },
+      });
 
-        try {
-            // Lógica de renovação de token deve ser inserida aqui
-            response = await fetch('/renew', {
-                method: 'GET',
-                headers: { 'Authorization': `Bearer ${currentToken}` },
-            });
+      if (response.ok) {
+        const { token } = await response.json();
 
-            if (response.ok) {
+        self.currentToken = token;
 
-                const { token } = await response.json();
+        port.postMessage({ action: "set", token });
 
-                currentToken = token
+        return;
+      }
 
-                port.postMessage({ action: 'set', token });
-
-                return;
-
-            }
-
-            port.postMessage({ action: 'error', data: await response.json() });
-
-        } catch (error) {
-            port.postMessage({ action: 'error', data: error });
-        }
-
-
-
-
-
-    }, renewInterval);
-
-
+      port.postMessage({ action: "error", data: await response.json() });
+    } catch (error) {
+      port.postMessage({ action: "error", data: error });
+    }
+  }, renewInterval);
 };
